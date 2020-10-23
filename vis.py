@@ -18,17 +18,37 @@ dtype=np.float32).reshape([-1, 6])
 fig = mayavi.mlab.figure(bgcolor=(0, 0, 0), engine=None, size=(640, 500))
 
 def draw_grid(x1, y1, x2, y2, fig, tube_radius=None, color=(0.5, 0.5, 0.5)):
-    mayavi.mlab.plot3d([x1, x1], [y1, y2], [0, 0], color=color, tube_radius=tube_radius, line_width=1, figure=fig)
-    mayavi.mlab.plot3d([x2, x2], [y1, y2], [0, 0], color=color, tube_radius=tube_radius, line_width=1, figure=fig)
-    mayavi.mlab.plot3d([x1, x2], [y1, y1], [0, 0], color=color, tube_radius=tube_radius, line_width=1, figure=fig)
-    mayavi.mlab.plot3d([x1, x2], [y2, y2], [0, 0], color=color, tube_radius=tube_radius, line_width=1, figure=fig)
-    return fig
+    step=0.1
+    x=np.zeros(1)
+    y=np.zeros(1)
+    if x1==x2:
+        y=np.array(np.arange(y1, y2, step)).reshape(-1,1)
+        x=x1*np.ones(y.shape)
+    if y1==y2:
+        x=np.array(np.arange(x1, x2, step)).reshape(-1,1)
+        y=y1*np.ones(x.shape)
+    z=np.zeros(x.shape)
+    return x,y,z
 
 def draw_multi_grid_range(fig, grid_size=20, bv_range=(-60, -60, 60, 60)):
-    for x in range(bv_range[0], bv_range[2], grid_size):
-        for y in range(bv_range[1], bv_range[3], grid_size):
-            fig = draw_grid(x, y, x + grid_size, y + grid_size, fig)
+    x=np.zeros((1,1))
+    y=np.zeros((1,1))
+    z=np.zeros((1,1))
+    for i in range(int((bv_range[2]-bv_range[0])/grid_size)+1):
+        x_t,y_t,z_t= draw_grid(bv_range[0]+i*grid_size,\
+        bv_range[1],bv_range[0]+i*grid_size, bv_range[3], fig)
+        x=np.concatenate((np.array(x),x_t),axis=0)
+        y=np.concatenate((np.array(y),y_t),axis=0)
+        z=np.concatenate((np.array(z),z_t),axis=0)
+    for i in range(int((bv_range[3]-bv_range[1])/grid_size)+1):
+        x_t,y_t,z_t = draw_grid(bv_range[0],\
+        bv_range[1]+i*grid_size,bv_range[2], bv_range[1]+i*grid_size, fig)
+        x=np.concatenate((np.array(x),x_t),axis=0)
+        y=np.concatenate((np.array(y),y_t),axis=0)
+        z=np.concatenate((np.array(z),z_t),axis=0)
 
+    mayavi.mlab.points3d(x, y, z, z, mode='point',\
+    colormap='spectral', color=(1, 1, 1), figure=fig)
     return fig
 
 def show_frame_idx(current_idx):
@@ -43,6 +63,7 @@ def update_point_3d(path_name, start_frame_idx):
     z = pointcloud[:, 2]  # z position of point
     current_camera = mayavi.mlab.view()
     mayavi.mlab.clf(fig)
+    draw_multi_grid_range(fig, bv_range=(0, -40, 100, 40))
     mayavi.mlab.points3d(x, y, z,
                      z,  # Values used for Color
                      mode="point",
@@ -50,7 +71,7 @@ def update_point_3d(path_name, start_frame_idx):
                      color=(0, 1, 0),   # Used a fixed (r,g,b) instead
                      figure=fig,
                      )
-    mayavi.mlab.view(        
+    mayavi.mlab.view(
             azimuth=current_camera[0],
             elevation=current_camera[1],
             focalpoint=current_camera[3],
@@ -74,38 +95,42 @@ def piker_callback_right(picker): #当鼠标点击会返回一个vtk picker对�
 
 
 ##################################################################################################
-x = pointcloud[:, 0]  # x position of point
-y = pointcloud[:, 1]  # y position of point
-z = pointcloud[:, 2]  # z position of point
-r = pointcloud[:, 3]  # reflectance value of point
-d = np.sqrt(x ** 2 + y ** 2)  # Map Distance from sensor
+def main():
+    x = pointcloud[:, 0]  # x position of point
+    y = pointcloud[:, 1]  # y position of point
+    z = pointcloud[:, 2]  # z position of point
+    r = pointcloud[:, 3]  # reflectance value of point
+    d = np.sqrt(x ** 2 + y ** 2)  # Map Distance from sensor
 
-degr = np.degrees(np.arctan(z / d))
+    degr = np.degrees(np.arctan(z / d))
 
-vals = 'height'
-if vals == "height":
-    col = z
-else:
-    col = d
+    vals = 'height'
+    if vals == "height":
+        col = z
+    else:
+        col = d
 
-picker = fig.on_mouse_pick(piker_callback_left, button='Left')
-picker = fig.on_mouse_pick(piker_callback_right, button='Right')
+    picker = fig.on_mouse_pick(piker_callback_left, button='Left')
+    picker = fig.on_mouse_pick(piker_callback_right, button='Right')
 
-draw_multi_grid_range(fig, bv_range=(0, -40, 100, 40))
-mayavi.mlab.points3d(x, y, z,
-                     col,  # Values used for Color
-                     mode="point",
-                     colormap='spectral',  # 'bone', 'copper', 'gnuplot'
-                     color=(0, 1, 0),   # Used a fixed (r,g,b) instead
-                     figure=fig,
-                     )
-mayavi.mlab.view(
-        azimuth=180,
-        elevation=70,
-        focalpoint=[12.0909996, -1.04700089, -2.03249991],
-        distance=62.0,
-        figure=fig,
-    )
+    draw_multi_grid_range(fig, bv_range=(0, -40, 100, 40))
+    mayavi.mlab.points3d(x, y, z,
+                        col,  # Values used for Color
+                        mode="point",
+                        colormap='spectral',  # 'bone', 'copper', 'gnuplot'
+                        color=(0, 1, 0),   # Used a fixed (r,g,b) instead
+                        figure=fig,
+                        )
+    mayavi.mlab.view(
+            azimuth=180,
+            elevation=70,
+            focalpoint=[12.0909996, -1.04700089, -2.03249991],
+            distance=62.0,
+            figure=fig,
+        )
 
-show_frame_idx(start_idx)
-mayavi.mlab.show()
+    show_frame_idx(start_idx)
+    mayavi.mlab.show()
+
+if __name__ == '__main__':
+    main()
