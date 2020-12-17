@@ -10,10 +10,11 @@ import argparse
 # args = parser.parse_args()
 # lidar_path更换为自己的.bin文件路径
 start_idx=0
-file_name="/home/zx/data/huawei+sample/test/"
+point_feature_num = 4
+file_name="/media/fzx/1/kittidata/kitti/training/velodyne/"
 pointcloud = np.fromfile(\
 str(file_name+"%06d.bin"%start_idx),\
-dtype=np.float32).reshape([-1, 6])
+dtype=np.float32).reshape([-1, point_feature_num])
 
 fig = mayavi.mlab.figure(bgcolor=(0, 0, 0), engine=None, size=(640, 500))
 
@@ -57,7 +58,7 @@ def show_frame_idx(current_idx):
 
 def update_point_3d(path_name, start_frame_idx):
     path_new=path_name+"%06d"%start_frame_idx+".bin"
-    pointcloud = np.fromfile(str(path_new),dtype=np.float32).reshape([-1, 6])
+    pointcloud = np.fromfile(str(path_new),dtype=np.float32).reshape([-1, point_feature_num])
     x = pointcloud[:, 0]  # x position of point
     y = pointcloud[:, 1]  # y position of point
     z = pointcloud[:, 2]  # z position of point
