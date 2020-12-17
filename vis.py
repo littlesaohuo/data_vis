@@ -1,7 +1,7 @@
 import numpy as np
 import mayavi.mlab
 import argparse
-
+import pickle
 # parser = argparse.ArgumentParser(description="arg parser")
 # parser.add_argument('--path', type=str, default='./', required=True)
 # parser.add_argument("--sf", type=int, default=0,\
@@ -10,10 +10,14 @@ import argparse
 # args = parser.parse_args()
 # lidar_path更换为自己的.bin文件路径
 start_idx=0
-file_name="/home/zx/data/huawei+sample/test/"
-pointcloud = np.fromfile(\
-str(file_name+"%06d.bin"%start_idx),\
-dtype=np.float32).reshape([-1, 6])
+point_feature_num = 5
+
+file_name="/home/fzx/data/save_pcd/"
+
+#pointcloud = np.fromfile(str(file_name+"%06d.bin"%start_idx),dtype=np.float32).reshape([-1, 5])
+pointcloud = []
+with open(str(file_name+"%06d.bin"%start_idx), 'rb') as f:
+    pointcloud=pickle.load(f).reshape([-1, point_feature_num])
 
 fig = mayavi.mlab.figure(bgcolor=(0, 0, 0), engine=None, size=(640, 500))
 
@@ -57,7 +61,9 @@ def show_frame_idx(current_idx):
 
 def update_point_3d(path_name, start_frame_idx):
     path_new=path_name+"%06d"%start_frame_idx+".bin"
-    pointcloud = np.fromfile(str(path_new),dtype=np.float32).reshape([-1, 6])
+    with open(str(path_new), 'rb') as f:
+        pointcloud=pickle.load(f).reshape([-1, point_feature_num])
+    #pointcloud = np.fromfile(str(path_new),dtype=np.float32).reshape([-1, point_feature_num])
     x = pointcloud[:, 0]  # x position of point
     y = pointcloud[:, 1]  # y position of point
     z = pointcloud[:, 2]  # z position of point
